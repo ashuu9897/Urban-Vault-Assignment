@@ -453,7 +453,7 @@ erDiagram
 
 ## 12. Time spent
 
-_Fill in: X hours_
+6-7 hours
 
 ---
 
@@ -509,8 +509,7 @@ particular it helped with:
 - Questioned the implementation to understand it, e.g. where names come from (seed data vs
   code), how the API and seed data fit together, and why revisiting a list page doesn't
   trigger a new request (TanStack Query's cache and `staleTime`).
-- _[Add any further changes you made, and confirm how you reviewed the code, e.g. "I read
-  through every file and can explain each part."]_
+
 
 **How the output was verified.**
 
