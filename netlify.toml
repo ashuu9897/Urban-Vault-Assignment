@@ -1,0 +1,22 @@
+# Netlify serves the Vite build; API calls are proxied to the Django backend on Render,
+# so the browser only ever talks to one origin (no CORS configuration needed).
+[build]
+  base = "frontend"
+  command = "npm ci && npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# Proxy /api/* to the backend. Replace the host with your Render service URL.
+[[redirects]]
+  from = "/api/*"
+  to = "https://facility-helpdesk-api.onrender.com/api/:splat"
+  status = 200
+  force = true
+
+# Single-page app: let React Router handle every other path.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

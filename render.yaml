@@ -1,0 +1,27 @@
+# Render Blueprint for the Django API (Dashboard -> New -> Blueprint -> pick this repo).
+# The frontend is deployed separately on Netlify (see netlify.toml).
+services:
+  - type: web
+    name: facility-helpdesk-api
+    runtime: python
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput
+    # The free plan has no shell or pre-deploy hook, so migrate and seed on every start.
+    # seed_data is idempotent: it skips ticket generation when tickets already exist.
+    startCommand: >-
+      python manage.py migrate --noinput &&
+      python manage.py seed_data &&
+      gunicorn config.wsgi:application --bind 0.0.0.0:$PORT
+    healthCheckPath: /admin/login/
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.8
+      - key: DEBUG
+        value: "false"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: TIME_ZONE
+        value: Asia/Kolkata
+      # Optional: set DATABASE_URL to a Postgres URL (e.g. Neon) to keep data across restarts.
+      # Without it the API uses SQLite on Render's ephemeral disk, re-seeded on each start.

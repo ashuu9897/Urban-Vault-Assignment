@@ -4,3 +4,7 @@ django-filter==26.2
 django-cors-headers==4.9.0
 python-dotenv==1.2.4
 dj-database-url==3.1.2
+gunicorn==23.0.0
+whitenoise==6.9.0
+# Postgres driver, only needed in production (set DATABASE_URL); no wheels for 32-bit Windows.
+psycopg[binary]==3.2.9 ; sys_platform == "linux"
