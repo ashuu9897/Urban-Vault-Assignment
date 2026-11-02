@@ -11,6 +11,7 @@ import { ErrorState } from '../common/ErrorState';
 import { LoadingSkeleton } from '../common/LoadingSkeleton';
 import { SectionLabel } from '../common/SectionLabel';
 import { Surface } from '../common/Surface';
+import { MOBILE_BOTTOM_INSET } from '../../theme/layout';
 import { HEADER_HEIGHT } from '../layout/AppHeader';
 import { ActivityTimeline } from './ActivityTimeline';
 import { CommentComposer } from './CommentComposer';
@@ -27,7 +28,8 @@ const viewportPanelSx = {
   overflow: 'hidden',
   minHeight: 420,
   height: {
-    xs: `calc(100dvh - ${HEADER_HEIGHT + 32}px)`,
+    // Header + the page's top padding + the bottom inset kept clear on phones.
+    xs: `calc(100dvh - ${HEADER_HEIGHT + 16}px - ${MOBILE_BOTTOM_INSET})`,
     md: `calc(100dvh - ${HEADER_HEIGHT + 48}px)`,
   },
   position: { md: 'sticky' },

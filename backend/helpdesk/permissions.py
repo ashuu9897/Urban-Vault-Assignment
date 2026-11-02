@@ -11,7 +11,7 @@ from typing import Literal
 from .choices import Role, TicketStatus
 from .models import Ticket, User
 
-TicketAction = Literal["assign", "resolve"]
+TicketAction = Literal["assign", "resolve", "reopen"]
 
 
 def can_view(user: User, ticket: Ticket) -> bool:
@@ -46,15 +46,31 @@ def can_resolve(user: User, ticket: Ticket) -> bool:
     return False
 
 
+def can_reopen(user: User, ticket: Ticket) -> bool:
+    """A resolved ticket may be reopened by the client who raised it or the department POC."""
+    if ticket.status != TicketStatus.RESOLVED:
+        return False
+    if user.role == Role.CLIENT:
+        return ticket.created_by_id == user.id
+    return is_ticket_poc(user, ticket)
+
+
 def available_actions(user: User, ticket: Ticket) -> list[TicketAction]:
     actions: list[TicketAction] = []
     if can_assign(user, ticket):
         actions.append("assign")
     if can_resolve(user, ticket):
         actions.append("resolve")
+    if can_reopen(user, ticket):
+        actions.append("reopen")
     return actions
 
 
 def is_action_required(user: User, ticket: Ticket) -> bool:
-    """Staff are *expected* to act on their actions; a client's resolve is optional."""
-    return user.role != Role.CLIENT and bool(available_actions(user, ticket))
+    """
+    Staff are *expected* to act on assign/resolve. A client's resolve and anyone's reopen
+    are optional, so they never flag a ticket as needing attention.
+    """
+    if user.role == Role.CLIENT:
+        return False
+    return can_assign(user, ticket) or can_resolve(user, ticket)

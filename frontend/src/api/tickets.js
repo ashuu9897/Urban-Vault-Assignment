@@ -33,6 +33,11 @@ export async function resolveTicket(ticketId, comment) {
   return data;
 }
 
+export async function reopenTicket(ticketId, comment) {
+  const { data } = await apiClient.post(`/tickets/${ticketId}/reopen/`, { comment });
+  return data;
+}
+
 /** Returns the created activity entry. */
 export async function addComment(ticketId, text) {
   const { data } = await apiClient.post(`/tickets/${ticketId}/comments/`, { text });

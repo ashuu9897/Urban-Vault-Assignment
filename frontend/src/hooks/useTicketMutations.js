@@ -1,7 +1,13 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { isValidationError } from '../api/client';
-import { addComment, assignTicket, createTicket, resolveTicket } from '../api/tickets';
+import {
+  addComment,
+  assignTicket,
+  createTicket,
+  reopenTicket,
+  resolveTicket,
+} from '../api/tickets';
 import { queryKeys } from './queryKeys';
 import { useCurrentUser } from './useCurrentUser';
 import { useToast } from './useToast';
@@ -48,6 +54,13 @@ export function useResolveTicket(ticketId) {
   return useTicketMutation({
     mutationFn: (comment) => resolveTicket(ticketId, comment),
     successMessage: (ticket) => `#${ticket.code} marked as resolved`,
+  });
+}
+
+export function useReopenTicket(ticketId) {
+  return useTicketMutation({
+    mutationFn: (comment) => reopenTicket(ticketId, comment),
+    successMessage: (ticket) => `#${ticket.code} reopened`,
   });
 }
 

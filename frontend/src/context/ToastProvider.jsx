@@ -2,6 +2,7 @@ import { Alert, Snackbar } from '@mui/material';
 import PropTypes from 'prop-types';
 import { useCallback, useMemo, useState } from 'react';
 
+import { MOBILE_BOTTOM_INSET } from '../theme/layout';
 import { ToastContext } from './ToastContext';
 
 /** One toast at a time; a new message replaces the current one. */
@@ -33,6 +34,7 @@ export function ToastProvider({ children }) {
         autoHideDuration={4000}
         onClose={handleClose}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        sx={{ bottom: { xs: MOBILE_BOTTOM_INSET, md: 24 } }}
       >
         {toast ? (
           <Alert

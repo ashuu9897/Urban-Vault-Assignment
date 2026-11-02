@@ -117,6 +117,68 @@ class TestResolveTicket:
             services.resolve_ticket(ticket=ticket, actor=client_user)
 
 
+class TestReopenTicket:
+    def test_returns_to_the_assigned_technician(self, assigned_ticket, technician, client_user):
+        services.resolve_ticket(ticket=assigned_ticket, actor=technician, comment="Recharged.")
+
+        reopened = services.reopen_ticket(
+            ticket=assigned_ticket, actor=client_user, reason="  Still blowing warm air.  "
+        )
+
+        assert reopened.status == TicketStatus.PENDING_RESOLUTION
+        assert reopened.technician == technician
+        assert (reopened.resolved_at, reopened.resolved_by) == (None, None)
+        activity = reopened.activities.last()
+        assert (activity.type, activity.actor, activity.from_value, activity.to_value) == (
+            ActivityType.STATUS_CHANGED,
+            client_user,
+            "Resolved",
+            "Open",
+        )
+        assert activity.text == "Still blowing warm air."
+
+    def test_goes_back_to_assignment_if_resolved_before_a_technician(
+        self, ticket, client_user, poc
+    ):
+        services.resolve_ticket(ticket=ticket, actor=client_user)
+
+        reopened = services.reopen_ticket(ticket=ticket, actor=poc, reason="Client called again.")
+
+        assert reopened.status == TicketStatus.PENDING_ASSIGNMENT
+        assert reopened.technician is None
+        assert permissions.available_actions(poc, reopened) == ["assign"]
+
+    @pytest.mark.parametrize("reason", ["", "   ", "no"])
+    def test_requires_a_reason(self, ticket, client_user, reason):
+        services.resolve_ticket(ticket=ticket, actor=client_user)
+        with pytest.raises(ValidationError) as excinfo:
+            services.reopen_ticket(ticket=ticket, actor=client_user, reason=reason)
+        assert "comment" in excinfo.value.message_dict
+
+    def test_only_the_creator_or_department_poc_may_reopen(
+        self, assigned_ticket, technician, other_client, it_poc
+    ):
+        services.resolve_ticket(ticket=assigned_ticket, actor=technician, comment="Recharged.")
+        for outsider in (technician, other_client, it_poc):
+            with pytest.raises(PermissionDenied):
+                services.reopen_ticket(
+                    ticket=assigned_ticket, actor=outsider, reason="Still broken."
+                )
+
+    def test_open_tickets_cannot_be_reopened(self, ticket, client_user):
+        with pytest.raises(ValidationError, match="Only resolved tickets"):
+            services.reopen_ticket(ticket=ticket, actor=client_user, reason="Still broken.")
+
+    def test_reopened_ticket_can_be_resolved_again(self, ticket, client_user):
+        services.resolve_ticket(ticket=ticket, actor=client_user)
+        services.reopen_ticket(ticket=ticket, actor=client_user, reason="It came back.")
+
+        resolved = services.resolve_ticket(ticket=ticket, actor=client_user)
+
+        assert resolved.status == TicketStatus.RESOLVED
+        assert resolved.resolved_at is not None
+
+
 class TestAddComment:
     def test_anyone_who_can_see_the_ticket_may_comment(self, ticket, client_user, poc):
         for author in (client_user, poc):
@@ -148,12 +210,19 @@ class TestPermissions:
 
         services.resolve_ticket(ticket=ticket, actor=technician, comment="All fixed.")
         ticket.refresh_from_db()
-        for user in (client_user, poc, technician):
-            assert permissions.available_actions(user, ticket) == []
+        assert permissions.available_actions(client_user, ticket) == ["reopen"]
+        assert permissions.available_actions(poc, ticket) == ["reopen"]
+        assert permissions.available_actions(technician, ticket) == []
 
     def test_action_required_is_never_shown_to_clients(self, ticket, client_user, poc):
         assert permissions.is_action_required(client_user, ticket) is False
         assert permissions.is_action_required(poc, ticket) is True
+
+    def test_reopen_never_marks_a_ticket_as_action_required(self, ticket, client_user, poc):
+        services.resolve_ticket(ticket=ticket, actor=client_user)
+        ticket.refresh_from_db()
+        assert permissions.available_actions(poc, ticket) == ["reopen"]
+        assert permissions.is_action_required(poc, ticket) is False
 
     def test_can_view_matches_visible_tickets_queryset(
         self, assigned_ticket, client_user, other_client, poc, it_poc, technician, it_technician

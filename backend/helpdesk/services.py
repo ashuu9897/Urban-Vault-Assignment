@@ -30,6 +30,7 @@ from .models import IssueCategory, Ticket, TicketActivity, User
 DESCRIPTION_MAX_LENGTH = 1000
 COMMENT_MAX_LENGTH = 500
 RESOLUTION_COMMENT_MIN_LENGTH = 5
+REOPEN_REASON_MIN_LENGTH = 5
 DUPLICATE_TICKET_WINDOW = timedelta(hours=24)
 
 
@@ -177,6 +178,53 @@ def resolve_ticket(
         from_value=OPEN_LABEL,
         to_value=RESOLVED_LABEL,
         text=comment,
+        created_at=now,
+    )
+    return ticket
+
+
+@transaction.atomic
+def reopen_ticket(
+    *,
+    ticket: Ticket,
+    actor: User,
+    reason: str,
+    at: datetime | None = None,
+) -> Ticket:
+    """
+    Put a resolved ticket back in the queue when the issue comes back. It returns to the
+    technician who worked on it, or to the POC for assignment if it was closed before one
+    was assigned. A reason is required so the next person knows what is still wrong.
+    """
+    ticket = Ticket.objects.select_for_update().get(pk=ticket.pk)
+    if ticket.status != TicketStatus.RESOLVED:
+        raise ValidationError("Only resolved tickets can be reopened.")
+    if not permissions.can_reopen(actor, ticket):
+        raise PermissionDenied("You cannot reopen this ticket.")
+
+    reason = reason.strip()
+    if len(reason) < REOPEN_REASON_MIN_LENGTH:
+        raise ValidationError(
+            {
+                "comment": f"Please say why the ticket is being reopened "
+                f"(min {REOPEN_REASON_MIN_LENGTH} characters)."
+            }
+        )
+
+    now = at or timezone.now()
+    ticket.status = (
+        TicketStatus.PENDING_RESOLUTION if ticket.technician_id else TicketStatus.PENDING_ASSIGNMENT
+    )
+    ticket.resolved_at = None
+    ticket.resolved_by = None
+    ticket.save(update_fields=["status", "resolved_at", "resolved_by", "updated_at"])
+    TicketActivity.objects.create(
+        ticket=ticket,
+        type=ActivityType.STATUS_CHANGED,
+        actor=actor,
+        from_value=RESOLVED_LABEL,
+        to_value=OPEN_LABEL,
+        text=reason,
         created_at=now,
     )
     return ticket

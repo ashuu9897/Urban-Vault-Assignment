@@ -3,10 +3,12 @@ import { useTheme } from '@mui/material/styles';
 import PropTypes from 'prop-types';
 import { useId } from 'react';
 
+import { MOBILE_BOTTOM_INSET } from '../../theme/layout';
+
 /**
  * Generic modal: a title, any content, and an optional row of actions.
  *
- * - Full-screen on phones.
+ * - Full-screen on phones, with the actions lifted clear of host overlays (see theme/layout).
  * - Pass `onSubmit` to turn the whole dialog into a <form> (Enter submits, and a
  *   `type="submit"` button in `actions` works).
  * - While `busy` the dialog can't be dismissed, so an in-flight request isn't abandoned.
@@ -39,7 +41,11 @@ export function AppDialog({
     >
       <DialogTitle id={titleId}>{title}</DialogTitle>
       <DialogContent dividers>{children}</DialogContent>
-      {actions && <DialogActions sx={{ px: 3, py: 2 }}>{actions}</DialogActions>}
+      {actions && (
+        <DialogActions sx={{ px: 3, pt: 2, pb: fullScreen ? MOBILE_BOTTOM_INSET : 2 }}>
+          {actions}
+        </DialogActions>
+      )}
     </Dialog>
   );
 }
