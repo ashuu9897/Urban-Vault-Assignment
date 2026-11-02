@@ -182,6 +182,62 @@ class TestResolveEndpoint:
         assert response.json()["detail"] == "This ticket is already resolved."
 
 
+class TestReopenEndpoint:
+    def test_client_reopens_with_reason(self, api, assigned_ticket, technician, client_user):
+        services.resolve_ticket(ticket=assigned_ticket, actor=technician, comment="Recharged.")
+
+        response = api(client_user).post(
+            detail_url(assigned_ticket, "reopen/"),
+            {"comment": "Still blowing warm air."},
+            format="json",
+        )
+
+        assert response.status_code == 200
+        body = response.json()
+        assert body["status"] == TicketStatus.PENDING_RESOLUTION
+        assert body["resolved_at"] is None
+        assert body["available_actions"] == ["resolve"]
+        last = body["activities"][-1]
+        assert (last["type"], last["from_value"], last["to_value"], last["text"]) == (
+            "status_changed",
+            "Resolved",
+            "Open",
+            "Still blowing warm air.",
+        )
+
+    def test_resolved_ticket_offers_reopen(self, api, ticket, client_user):
+        services.resolve_ticket(ticket=ticket, actor=client_user)
+
+        response = api(client_user).get(detail_url(ticket))
+
+        assert response.json()["available_actions"] == ["reopen"]
+
+    def test_missing_reason_is_400(self, api, ticket, client_user):
+        services.resolve_ticket(ticket=ticket, actor=client_user)
+
+        response = api(client_user).post(detail_url(ticket, "reopen/"), {}, format="json")
+
+        assert response.status_code == 400
+        assert "comment" in response.json()["errors"]
+
+    def test_open_ticket_is_400(self, api, ticket, client_user):
+        response = api(client_user).post(
+            detail_url(ticket, "reopen/"), {"comment": "Still broken."}, format="json"
+        )
+
+        assert response.status_code == 400
+        assert response.json()["detail"] == "Only resolved tickets can be reopened."
+
+    def test_technician_cannot_reopen(self, api, assigned_ticket, technician):
+        services.resolve_ticket(ticket=assigned_ticket, actor=technician, comment="Recharged.")
+
+        response = api(technician).post(
+            detail_url(assigned_ticket, "reopen/"), {"comment": "Still broken."}, format="json"
+        )
+
+        assert response.status_code == 403
+
+
 class TestCommentsEndpoint:
     def test_creates_comment_activity(self, api, ticket, poc):
         response = api(poc).post(detail_url(ticket, "comments/"), {"text": "Looking into it"})

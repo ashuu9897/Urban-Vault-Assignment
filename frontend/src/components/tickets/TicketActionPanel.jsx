@@ -1,6 +1,7 @@
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import DoneIcon from '@mui/icons-material/Done';
 import PersonAddAlt1OutlinedIcon from '@mui/icons-material/PersonAddAlt1Outlined';
+import ReplayIcon from '@mui/icons-material/Replay';
 import { Alert } from '@mui/material';
 import PropTypes from 'prop-types';
 import { useState } from 'react';
@@ -11,6 +12,7 @@ import { formatDateTime } from '../../utils/formatDate';
 import { ticketShape } from '../../utils/propTypes';
 import { ActionCallout } from '../common/ActionCallout';
 import { AssignTechnicianForm } from './AssignTechnicianForm';
+import { ReopenTicketForm } from './ReopenTicketForm';
 import { ResolveTicketForm } from './ResolveTicketForm';
 
 const WAITING_FOR = {
@@ -48,10 +50,26 @@ export function TicketActionPanel({ ticket, justCreated = false }) {
   const [expanded, setExpanded] = useState(false);
 
   if (ticket.status === 'resolved') {
+    const resolvedOn = `This ticket was resolved on ${formatDateTime(ticket.resolved_at)}.`;
+    if (!ticket.available_actions.includes('reopen')) {
+      return (
+        <Alert severity="success" icon={<CheckCircleOutlineIcon />}>
+          {resolvedOn}
+        </Alert>
+      );
+    }
     return (
-      <Alert severity="success" icon={<CheckCircleOutlineIcon />}>
-        This ticket was resolved on {formatDateTime(ticket.resolved_at)}.
-      </Alert>
+      <ActionCallout
+        tone="success"
+        message={`${resolvedOn} If the issue is back, you can reopen it.`}
+        actionLabel="Reopen Ticket"
+        actionIcon={<ReplayIcon />}
+        actionColor="warning"
+        expanded={expanded}
+        onExpand={() => setExpanded(true)}
+      >
+        <ReopenTicketForm ticketId={ticket.id} onCancel={() => setExpanded(false)} />
+      </ActionCallout>
     );
   }
 

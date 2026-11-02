@@ -19,6 +19,7 @@ from .serializers import (
     AssignTechnicianSerializer,
     CommentCreateSerializer,
     IssueCategorySerializer,
+    ReopenTicketSerializer,
     ResolveTicketSerializer,
     TicketActivitySerializer,
     TicketCreateSerializer,
@@ -94,6 +95,14 @@ class TicketViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.G
         payload = self._validated(ResolveTicketSerializer, request)
         ticket = services.resolve_ticket(
             ticket=self.get_object(), actor=request.user, comment=payload["comment"]
+        )
+        return self._detail_response(ticket)
+
+    @action(detail=True, methods=["post"])
+    def reopen(self, request: Request, pk: str) -> Response:
+        payload = self._validated(ReopenTicketSerializer, request)
+        ticket = services.reopen_ticket(
+            ticket=self.get_object(), actor=request.user, reason=payload["comment"]
         )
         return self._detail_response(ticket)
 

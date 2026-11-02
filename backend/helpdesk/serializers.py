@@ -153,6 +153,18 @@ class ResolveTicketSerializer(serializers.Serializer):
     )
 
 
+class ReopenTicketSerializer(serializers.Serializer):
+    # Presence only; the service enforces the minimum length with a friendlier message.
+    comment = serializers.CharField(
+        allow_blank=True,
+        max_length=COMMENT_MAX_LENGTH,
+        error_messages={
+            "required": "Please say why the ticket is being reopened.",
+            "max_length": f"Comment must be at most {COMMENT_MAX_LENGTH} characters.",
+        },
+    )
+
+
 class CommentCreateSerializer(serializers.Serializer):
     text = serializers.CharField(
         max_length=COMMENT_MAX_LENGTH,

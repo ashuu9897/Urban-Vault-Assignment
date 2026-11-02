@@ -53,7 +53,7 @@ export const ticketShape = PropTypes.shape({
   assignees: PropTypes.arrayOf(userSummaryShape).isRequired,
   created_at: PropTypes.string.isRequired,
   resolved_at: PropTypes.string,
-  available_actions: PropTypes.arrayOf(PropTypes.oneOf(['assign', 'resolve'])).isRequired,
+  available_actions: PropTypes.arrayOf(PropTypes.oneOf(['assign', 'resolve', 'reopen'])).isRequired,
   action_required: PropTypes.bool.isRequired,
   description: PropTypes.string,
   activities: PropTypes.arrayOf(activityShape),

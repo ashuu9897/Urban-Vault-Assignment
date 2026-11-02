@@ -29,8 +29,8 @@ There is no login. A **"Viewing as"** selector in the header switches between se
 
 | Role | Sees | Can do |
 |---|---|---|
-| **Client** (tenant's POC, e.g. Chaitanya M of *Harness*) | Tickets they created | Create tickets; mark their open tickets resolved (comment optional); comment |
-| **Department POC** (e.g. Dhananjaya Murthy, Technical Manager) | Every ticket of their department | Assign a technician of the same department (while *Pending Technician Assignment*); comment |
+| **Client** (tenant's POC, e.g. Chaitanya M of *Harness*) | Tickets they created | Create tickets; mark their open tickets resolved (comment optional); reopen their resolved tickets (reason required); comment |
+| **Department POC** (e.g. Dhananjaya Murthy, Technical Manager) | Every ticket of their department | Assign a technician of the same department (while *Pending Technician Assignment*); reopen resolved department tickets (reason required); comment |
 | **Technician** (e.g. Prakash Kumar) | Tickets assigned to them | Mark resolved with a **required** comment (while *Pending Resolution*); comment |
 
 ### Ticket lifecycle
@@ -41,7 +41,8 @@ stateDiagram-v2
     PendingAssignment --> PendingResolution: POC assigns a technician
     PendingAssignment --> Resolved: Client marks resolved
     PendingResolution --> Resolved: Technician (comment required)\nor client marks resolved
-    Resolved --> [*]
+    Resolved --> PendingResolution: Client or POC reopens (reason required)\nback to the same technician
+    Resolved --> PendingAssignment: Client or POC reopens\n(when no technician was assigned)
 ```
 
 Every step writes an entry to the ticket's **activity** timeline (`created`, `auto_assigned`,
@@ -240,6 +241,7 @@ header **`X-User-Id: <id>`** (see [design decisions](#9-key-design-decisions)).
 | GET | `/api/tickets/{id}/assignable-technicians/` | Technicians of the ticket's department (ticket's POC only) | 200 |
 | POST | `/api/tickets/{id}/assign/` | `{technician_id}` | 200 + ticket detail |
 | POST | `/api/tickets/{id}/resolve/` | `{comment}` | 200 + ticket detail |
+| POST | `/api/tickets/{id}/reopen/` | `{comment}`: reason, min 5 chars (resolved tickets only) | 200 + ticket detail |
 | POST | `/api/tickets/{id}/comments/` | `{text}` | **201** + the new activity |
 
 **List query params:** `tab=open|resolved`, `status=pending_assignment|pending_resolution|resolved`,
@@ -444,7 +446,7 @@ erDiagram
 - **No real authentication or authorisation beyond the demo header.** Anyone who can reach the
   API can act as any user.
 - No real-time updates: other users' changes appear on refetch/navigation, not live.
-- No reopen flow, re-assignment, SLAs, attachments or notifications.
+- No re-assignment, SLAs, attachments or notifications.
 - SQLite by default; fine for the demo, but use PostgreSQL (`DATABASE_URL`) for concurrent
   writes, where the row locks also become meaningful.
 - The browser-level end-to-end flow was verified manually, not with automated e2e tests.
@@ -460,7 +462,7 @@ erDiagram
 ## 13. What I'd improve with more time
 
 - Real authentication (session or JWT/SSO) and object-level permissions in DRF.
-- Reopen flow, re-assignment, SLA timers and escalation.
+- Re-assignment, SLA timers and escalation.
 - Notifications (email / in-app) and live updates (WebSockets or polling).
 - Attachments (photos of the issue) with object storage.
 - Audit/report export (CSV) and basic dashboards per department.

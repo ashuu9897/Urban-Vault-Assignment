@@ -37,3 +37,4 @@ export const SEARCH_DEBOUNCE_MS = 300;
 export const DESCRIPTION_MAX_LENGTH = 1000;
 export const COMMENT_MAX_LENGTH = 500;
 export const RESOLUTION_COMMENT_MIN_LENGTH = 5;
+export const REOPEN_REASON_MIN_LENGTH = 5;
