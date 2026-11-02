@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-16 -119 422 422">
+  <title>Urban Vault</title>
+  <!-- Same artwork as src/components/layout/BrandLogo.jsx; dark on light tabs, light on dark. -->
+  <style>
+    .mark { fill: #111827; stroke: #111827; }
+    @media (prefers-color-scheme: dark) { .mark { fill: #ffffff; stroke: #ffffff; } }
+  </style>
+  <path class="mark" stroke="none" d="M6 0H162A6 6 0 0 1 168 6V100A84 84 0 0 1 0 100V6A6 6 0 0 1 6 0Z" />
+  <path class="mark" stroke-width="16" stroke-linejoin="round" d="M198 8H382L290 169Z" />
+</svg>
